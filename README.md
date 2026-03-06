@@ -14,7 +14,8 @@ In a similar sense, if you look at cloud/systems designs in which there are plen
 # Developed environments
 - simple: simplest environment that can be created
 - simple-tracking: added a postgresql DB to keep track of the consumption
-- 
+- simple-tracking-web: adds the web UI of litellm and the Open Web UI for LLM consumption
+- simple-tracking-web-rag: adds a service that ingests, chunks and indexes documents, and wraps LLM calls around it, so you can communicate with it through the Open Web UI
 
 # Special thanks
 I would like to thank the effort of Pablo Dafonte Iglesias, again, as someone who has guided me into trying this, so that, we go to the next step in covering AI needs. That's what I'm missing the enterprise part of thinking :)
