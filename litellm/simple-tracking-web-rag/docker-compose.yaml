@@ -1,0 +1,85 @@
+services:
+  # ── Postgres (LiteLLM metadata) ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: litellm-db
+    environment:
+      POSTGRES_USER: llm-admin
+      POSTGRES_PASSWORD: your-secure-password
+      POSTGRES_DB: litellm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ── Qdrant (vector store for RAG) ────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  # ── RAG API (OpenAI-compatible endpoint) ─────────────────────────────────────
+  rag-api:
+    build:
+      context: ./rag-api
+      dockerfile: Dockerfile
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Where to find the vector DB
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      # The *real* LLM is called via LiteLLM so RAG stays model-agnostic
+      - LITELLM_BASE_URL=http://host.docker.internal:4000/v1
+      - LITELLM_API_KEY=sk-1234
+      # Embedding model served by LiteLLM (must be configured in config.yaml)
+      - EMBEDDING_MODEL=text-embedding
+      # LLM used for answer synthesis
+      - CHAT_MODEL=llama3
+      # Default collection name
+      - QDRANT_COLLECTION=documents
+      # Must match embedding model output: nomic-embed-text=1024, text-embedding-3-small=1536
+      - VECTOR_SIZE=768
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+    volumes:
+      - ./rag-api:/app   # live-reload friendly; remove in production
+
+  # ── LiteLLM Gateway ──────────────────────────────────────────────────────────
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    network_mode: host
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - DATABASE_URL=postgresql://llm-admin:your-secure-password@localhost:5432/litellm
+      - LITELLM_MASTER_KEY=sk-1234
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    depends_on:
+      - db
+
+  # ── Open WebUI (chat interface) ───────────────────────────────────────────────
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://host.docker.internal:4000/v1
+      - OPENAI_API_KEY=sk-1234
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  qdrant_data:

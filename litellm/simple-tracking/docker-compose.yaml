@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: litellm-db
+    environment:
+      POSTGRES_USER: llm-admin
+      POSTGRES_PASSWORD: your-secure-password
+      POSTGRES_DB: litellm
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    network_mode: host
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      # Database connection string
+      - DATABASE_URL=postgresql://llm-admin:your-secure-password@localhost:5432/litellm
+      - LITELLM_MASTER_KEY=sk-1234  # Required for UI login
+      - UI_PASSWORD=admin-password-123
+    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  pgdata:

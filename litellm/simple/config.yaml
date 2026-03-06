@@ -1,0 +1,6 @@
+model_list:
+  - model_name: llama3  # The name you want to use in your API calls
+    litellm_params:
+      model: ollama/llama3
+      # Since we use network_mode: host, LiteLLM sees Ollama on localhost
+      api_base: "http://localhost:11434"

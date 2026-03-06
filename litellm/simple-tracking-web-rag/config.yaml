@@ -1,0 +1,26 @@
+model_list:
+  # ── Existing Ollama model ───────────────────────────────────────────────────
+  - model_name: llama3
+    litellm_params:
+      model: ollama/llama3
+      api_base: "http://localhost:11434"
+
+  # ── Embedding model (used internally by the RAG API) ───────────────────────
+  # Requires: ollama pull nomic-embed-text
+  - model_name: text-embedding
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: "http://localhost:11434"
+
+  # ── RAG model – proxied to the RAG API service ─────────────────────────────
+  # Clients call model="rag"; LiteLLM forwards to the RAG API which handles
+  # retrieval from Qdrant and synthesis via llama3 above.
+  - model_name: rag
+    litellm_params:
+      model: openai/rag
+      api_base: "http://localhost:8000/v1"
+      api_key: sk-1234
+
+general_settings:
+  master_key: sk-1234
+  database_url: "postgresql://llm-admin:your-secure-password@localhost:5432/litellm"

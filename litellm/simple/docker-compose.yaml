@@ -1,0 +1,12 @@
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    network_mode: host
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      # Optional: Set a master key to secure your gateway
+      - LITELLM_MASTER_KEY=sk-1234
+    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
+    restart: unless-stopped
